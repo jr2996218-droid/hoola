@@ -1,0 +1,44 @@
+name: CI - Docker Compose
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose file
+        run: docker compose config
+
+      - name: Build and start services
+        run: docker compose up -d --build
+
+      - name: Wait for healthy services
+        run: |
+          for i in $(seq 1 30); do
+            APP_STATUS=$(docker compose ps --format json | grep -i "app" | head -n 1)
+            DB_STATUS=$(docker compose ps --format json | grep -i "db" | head -n 1)
+            echo "Intento $i..."
+            docker compose ps
+            if docker compose ps | grep -q "(healthy)"; then
+              echo "Servicios levantados."
+            fi
+            if ! docker compose ps | grep -q "starting"; then
+              break
+            fi
+            sleep 3
+          done
+
+      - name: Check app HTTP response
+        run: curl -fsS http://localhost:3000/
+
+      - name: Tear down containers
+        if: always()
+        run: docker compose down -v
