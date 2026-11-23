@@ -1,0 +1,12 @@
+node_modules/
+vendor/
+.env
+.env.*
+!.env.example
+db_data/
+mysql_data/
+data/
+*.sql
+*.log
+.DS_Store
+.vscode/
